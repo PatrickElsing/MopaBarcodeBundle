@@ -1,10 +1,13 @@
 <?php
 namespace Mopa\Bundle\BarcodeBundle\Model;
 
+use Imagine\Gd\Imagine;
 use Monolog\Logger;
 use Imagine\Gd\Image;
 use Imagine\Image\ImagineInterface;
 use Imagine\Image\Box;
+use Imagine\Image\Palette\RGB;
+use Imagine\Image\Metadata\MetadataBag;
 use Zend\Barcode\Barcode;
 
 class BarcodeService{
@@ -49,10 +52,14 @@ class BarcodeService{
                 $rendererOptions = isset($options['rendererOptions']) ? $options['rendererOptions'] : array();
                 $rendererOptions['width'] = isset($rendererOptions['width']) ? $rendererOptions['width'] : 2233;
                 $rendererOptions['height'] = isset($rendererOptions['height']) ? $rendererOptions['height'] : 649;
+                $palette = new RGB();
+                $metadata = new MetadataBag();
                 $image = new Image(
                     $imageResource = Barcode::factory(
                         $type, 'image', $barcodeOptions, $rendererOptions
-                    )->draw()
+                    )->draw(),
+                    $palette,
+                    $metadata
                 );
                 $image->save($file);
         }
@@ -70,8 +77,9 @@ class BarcodeService{
         if (file_exists($overlayImagePath)) {
             $destination = imagecreatefrompng($file);
             $src = imagecreatefrompng($overlayImagePath);
-
-            $overlayImage = new Image($src);
+            $palette = new RGB();
+            $metadata = new MetadataBag();
+            $overlayImage = new Image($src,$palette,$metadata);
             $overlayImage->resize(new Box($width, $width));
             $tmpFilePath = $this->kernelcachedir . DIRECTORY_SEPARATOR . sha1(time() . rand()) . '.png';
             $overlayImage->save($tmpFilePath);
@@ -155,5 +163,10 @@ class BarcodeService{
         } else {
             $this->overlayPath = __DIR__ . '/../Resources/qr_overlays';
         }
+    }
+
+    public function setWebRoot($webroot)
+    {
+        $this->webroot = $webroot;
     }
 }
